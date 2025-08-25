@@ -6,7 +6,7 @@ use std::{net::Ipv4Addr, sync::Arc, time::Duration};
 
 use super::{client_instance::MagicDnsClientInstance, server_instance::MagicDnsServerInstance};
 
-static DEFAULT_ET_DNS_ZONE: &str = "et.net.";
+static DEFAULT_ET_DNS_ZONE: &str = "dayu.net.";
 
 pub struct DnsRunner {
     client: Option<MagicDnsClientInstance>,
