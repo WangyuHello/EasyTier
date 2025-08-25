@@ -113,7 +113,7 @@ impl DNSTunnelConnector {
 
         let srv_domains = PROTO_PORT_OFFSET
             .iter()
-            .map(|(p, _)| (format!("_easytier._{}.{}", p, domain_name), *p)) // _easytier._udp.{domain_name}
+            .map(|(p, _)| (format!("_dayu._{}.{}", p, domain_name), *p)) // _easytier._udp.{domain_name}
             .collect::<Vec<_>>();
         tracing::info!("build srv_domains: {:?}", srv_domains);
         let responses = Arc::new(DashSet::new());

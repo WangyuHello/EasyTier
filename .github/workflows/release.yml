@@ -3,16 +3,6 @@ name: EasyTier Release
 on:
   workflow_dispatch:
     inputs:
-      core_run_id:
-        description: 'The run id of EasyTier-Core Action in EasyTier repo'
-        type: number
-        default: 10322498549
-        required: true
-      gui_run_id:
-        description: 'The run id of EasyTier-GUI Action in EasyTier repo'
-        type: number
-        default: 10322498557
-        required: true
       mobile_run_id:
         description: 'The run id of EasyTier-Mobile Action in EasyTier repo'
         type: number
@@ -34,35 +24,19 @@ permissions:
 
 jobs:
   release:
-    if: contains('["KKRainbow"]', github.actor)
+    if: contains('["WangyuHello"]', github.actor)
     runs-on: ubuntu-latest
     steps:
       -
         name: Checkout
         uses: actions/checkout@v4
 
-      - name: Download Core Artifact
-        uses: dawidd6/action-download-artifact@v11
-        with:
-          github_token: ${{secrets.GITHUB_TOKEN}}
-          run_id: ${{ inputs.core_run_id }}
-          repo: EasyTier/EasyTier
-          path: release_assets
-
-      - name: Download GUI Artifact
-        uses: dawidd6/action-download-artifact@v11
-        with:
-          github_token: ${{secrets.GITHUB_TOKEN}}
-          run_id: ${{ inputs.gui_run_id }}
-          repo: EasyTier/EasyTier
-          path: release_assets_nozip
-
       - name: Download Mobile Artifact
         uses: dawidd6/action-download-artifact@v11
         with:
           github_token: ${{secrets.GITHUB_TOKEN}}
           run_id: ${{ inputs.mobile_run_id }}
-          repo: EasyTier/EasyTier
+          repo: WangyuHello/EasyTier
           path: release_assets_nozip
 
       - name: Zip release assets
@@ -73,20 +47,6 @@ jobs:
 
           find release_assets_nozip -type f -exec mv {} zipped_assets \;
           ls -l -R ./zipped_assets
-
-          cd release_assets
-          ls -l -R ./
-          chmod -R 755 .
-          for x in `ls`; do
-            if [ "$x" = "Easytier-Magisk" ]; then
-              # for Easytier-Magisk, make sure files are in the root of the zip
-              cd $x;
-              zip -r ../../zipped_assets/$x-${VERSION}.zip .;
-              cd ..;
-            else
-              zip -r ../zipped_assets/$x-${VERSION}.zip $x;
-            fi
-          done
 
       - name: Release
         uses: softprops/action-gh-release@v2

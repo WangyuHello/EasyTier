@@ -85,7 +85,9 @@ class TauriVpnService : VpnService() {
         builder.addAddress(ipParts[0], ipParts[1].toInt())
 
         builder.setMtu(mtu)
-        builder.addDnsServer(dns)
+        builder.addDnsServer("192.168.30.2")
+        builder.addDnsServer("192.168.30.3")
+        builder.addSearchDomain(".")
 
         for (route in routes) {
             val ipParts = route.split("/")
