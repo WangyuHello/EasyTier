@@ -5,7 +5,8 @@ on:
     branches: ["develop", "main", "releases/**"]
   pull_request:
     branches: ["develop", "main"]
-      
+  workflow_dispatch:
+
 env:
   CARGO_TERM_COLOR: always
 
@@ -43,11 +44,13 @@ jobs:
       NAME: easytier
       TARGET: ${{ matrix.TARGET }}
       OS: ${{ matrix.OS }}
-      OSS_BUCKET: ${{ secrets.ALIYUN_OSS_BUCKET }}
     needs: pre_job
     if: needs.pre_job.outputs.should_skip != 'true'    
     steps:
       - uses: actions/checkout@v3
+
+      - name: Print run id
+        run: echo "Run id ${{ github.run_id }}"
 
       - name: Set current ref as env variable
         run: |
