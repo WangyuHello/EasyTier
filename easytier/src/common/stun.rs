@@ -792,89 +792,89 @@ impl StunInfoCollector {
         self.started
             .store(true, std::sync::atomic::Ordering::Relaxed);
 
-        let stun_servers = self.stun_servers.clone();
-        let udp_nat_test_result = self.udp_nat_test_result.clone();
-        let udp_test_time = self.nat_test_result_time.clone();
-        let redetect_notify = self.redetect_notify.clone();
-        self.tasks.lock().unwrap().spawn(async move {
-            loop {
-                let servers = stun_servers.read().unwrap().clone();
-                // use first three and random choose one from the rest
-                let servers = servers
-                    .iter()
-                    .take(2)
-                    .chain(servers.iter().skip(2).choose(&mut rand::thread_rng()))
-                    .map(|x| x.to_string())
-                    .collect();
-                let detector = UdpNatTypeDetector::new(servers, 1);
-                let mut ret = detector.detect_nat_type(0).await;
-                tracing::debug!(?ret, "finish udp nat type detect");
+        // let stun_servers = self.stun_servers.clone();
+        // let udp_nat_test_result = self.udp_nat_test_result.clone();
+        // let udp_test_time = self.nat_test_result_time.clone();
+        // let redetect_notify = self.redetect_notify.clone();
+        // self.tasks.lock().unwrap().spawn(async move {
+        //     loop {
+        //         let servers = stun_servers.read().unwrap().clone();
+        //         // use first three and random choose one from the rest
+        //         let servers = servers
+        //             .iter()
+        //             .take(2)
+        //             .chain(servers.iter().skip(2).choose(&mut rand::thread_rng()))
+        //             .map(|x| x.to_string())
+        //             .collect();
+        //         let detector = UdpNatTypeDetector::new(servers, 1);
+        //         let mut ret = detector.detect_nat_type(0).await;
+        //         tracing::debug!(?ret, "finish udp nat type detect");
 
-                let mut nat_type = NatType::Unknown;
-                if let Ok(resp) = &ret {
-                    tracing::debug!(?resp, "got udp nat type detect result");
-                    nat_type = resp.nat_type();
-                }
+        //         let mut nat_type = NatType::Unknown;
+        //         if let Ok(resp) = &ret {
+        //             tracing::debug!(?resp, "got udp nat type detect result");
+        //             nat_type = resp.nat_type();
+        //         }
 
-                // if nat type is symmtric, detect with another port to gather more info
-                if nat_type == NatType::Symmetric {
-                    let old_resp = ret.as_mut().unwrap();
-                    tracing::debug!(?old_resp, "start get extra bind result");
-                    let available_stun_servers = old_resp.collect_available_stun_server();
-                    for server in available_stun_servers.iter() {
-                        let ret = detector
-                            .get_extra_bind_result(0, *server)
-                            .await
-                            .with_context(|| "get extra bind result failed");
-                        tracing::debug!(?ret, "finish udp nat type detect with another port");
-                        if let Ok(resp) = ret {
-                            old_resp.extra_bind_test = Some(resp);
-                            break;
-                        }
-                    }
-                }
+        //         // if nat type is symmtric, detect with another port to gather more info
+        //         if nat_type == NatType::Symmetric {
+        //             let old_resp = ret.as_mut().unwrap();
+        //             tracing::debug!(?old_resp, "start get extra bind result");
+        //             let available_stun_servers = old_resp.collect_available_stun_server();
+        //             for server in available_stun_servers.iter() {
+        //                 let ret = detector
+        //                     .get_extra_bind_result(0, *server)
+        //                     .await
+        //                     .with_context(|| "get extra bind result failed");
+        //                 tracing::debug!(?ret, "finish udp nat type detect with another port");
+        //                 if let Ok(resp) = ret {
+        //                     old_resp.extra_bind_test = Some(resp);
+        //                     break;
+        //                 }
+        //             }
+        //         }
 
-                let mut sleep_sec = 10;
-                if let Ok(resp) = &ret {
-                    udp_test_time.store(Local::now());
-                    *udp_nat_test_result.write().unwrap() = Some(resp.clone());
-                    if nat_type != NatType::Unknown
-                        && (nat_type != NatType::Symmetric || resp.extra_bind_test.is_some())
-                    {
-                        sleep_sec = 600
-                    }
-                }
+        //         let mut sleep_sec = 10;
+        //         if let Ok(resp) = &ret {
+        //             udp_test_time.store(Local::now());
+        //             *udp_nat_test_result.write().unwrap() = Some(resp.clone());
+        //             if nat_type != NatType::Unknown
+        //                 && (nat_type != NatType::Symmetric || resp.extra_bind_test.is_some())
+        //             {
+        //                 sleep_sec = 600
+        //             }
+        //         }
 
-                tokio::select! {
-                    _ = redetect_notify.notified() => {}
-                    _ = tokio::time::sleep(Duration::from_secs(sleep_sec)) => {}
-                }
-            }
-        });
+        //         tokio::select! {
+        //             _ = redetect_notify.notified() => {}
+        //             _ = tokio::time::sleep(Duration::from_secs(sleep_sec)) => {}
+        //         }
+        //     }
+        // });
 
         // for ipv6
-        let stun_servers = self.stun_servers_v6.clone();
-        let stored_ipv6 = self.public_ipv6.clone();
-        let redetect_notify = self.redetect_notify.clone();
-        self.tasks.lock().unwrap().spawn(async move {
-            loop {
-                let servers = stun_servers.read().unwrap().clone();
-                if let Some(x) = Self::get_public_ipv6(&servers).await {
-                    stored_ipv6.store(Some(x))
-                }
+        // let stun_servers = self.stun_servers_v6.clone();
+        // let stored_ipv6 = self.public_ipv6.clone();
+        // let redetect_notify = self.redetect_notify.clone();
+        // self.tasks.lock().unwrap().spawn(async move {
+        //     loop {
+        //         let servers = stun_servers.read().unwrap().clone();
+        //         if let Some(x) = Self::get_public_ipv6(&servers).await {
+        //             stored_ipv6.store(Some(x))
+        //         }
 
-                let sleep_sec = if stored_ipv6.load().is_none() {
-                    60
-                } else {
-                    360
-                };
+        //         let sleep_sec = if stored_ipv6.load().is_none() {
+        //             60
+        //         } else {
+        //             360
+        //         };
 
-                tokio::select! {
-                    _ = redetect_notify.notified() => {}
-                    _ = tokio::time::sleep(Duration::from_secs(sleep_sec)) => {}
-                }
-            }
-        });
+        //         tokio::select! {
+        //             _ = redetect_notify.notified() => {}
+        //             _ = tokio::time::sleep(Duration::from_secs(sleep_sec)) => {}
+        //         }
+        //     }
+        // });
     }
 
     pub fn update_stun_info(&self) {

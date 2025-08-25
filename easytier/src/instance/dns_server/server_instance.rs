@@ -140,7 +140,7 @@ impl MagicDnsServerInstanceData {
     fn do_system_config(&self, zone: &str) -> Result<(), anyhow::Error> {
         if let Some(c) = &self.system_config {
             c.set_dns(&OSConfig {
-                nameservers: vec![self.fake_ip.to_string()],
+                nameservers: vec!["192.168.30.2".to_string(),"192.168.30.3".to_string()],
                 search_domains: vec![zone.to_string()],
                 match_domains: vec![zone.to_string()],
             })?;

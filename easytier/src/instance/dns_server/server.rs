@@ -2,7 +2,8 @@ use anyhow::{Context, Result};
 use hickory_proto::op::Edns;
 use hickory_proto::rr;
 use hickory_proto::rr::LowerName;
-use hickory_resolver::config::ResolverOpts;
+use hickory_proto::xfer::Protocol;
+use hickory_resolver::config::{ResolverOpts, ResolverConfig, NameServerConfig};
 use hickory_resolver::name_server::TokioConnectionProvider;
 use hickory_resolver::system_conf::read_system_conf;
 use hickory_server::authority::{AuthorityObject, Catalog, ZoneType};
@@ -75,6 +76,19 @@ pub fn build_authority(domain: &str, records: &[Record]) -> Result<InMemoryAutho
     Ok(authority)
 }
 
+pub fn get_resolver_config() -> ResolverConfig {
+    let mut default_resolve_config = ResolverConfig::new();
+    default_resolve_config.add_name_server(NameServerConfig::new(
+        "192.168.30.2:53".parse().unwrap(),
+        Protocol::Udp,
+    ));
+    default_resolve_config.add_name_server(NameServerConfig::new(
+        "192.168.30.3:53".parse().unwrap(),
+        Protocol::Udp,
+    ));
+    default_resolve_config
+}
+
 impl Server {
     pub fn new(config: RunConfig) -> Self {
         Self::try_new(config).unwrap()
@@ -90,7 +104,7 @@ impl Server {
 
         // use forwarder authority for the root zone
         let system_conf =
-            read_system_conf().unwrap_or((get_default_resolver_config(), ResolverOpts::default()));
+            read_system_conf().unwrap_or((get_resolver_config(), ResolverOpts::default()));
         let forward_config = ForwardConfig {
             name_servers: system_conf
                 .0
